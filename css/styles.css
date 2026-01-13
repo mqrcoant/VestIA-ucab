@@ -125,6 +125,19 @@ h4,
 	transition: border-color 0.3s ease;
 }
 
+#filters-reset {
+	width: 36px;
+	height: 36px;
+	padding: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+#filters-reset .fa-broom {
+	font-size: 0.9rem;
+}
+
 .form-control:focus,
 .form-select:focus {
 	border-color: var(--vestia-gold);

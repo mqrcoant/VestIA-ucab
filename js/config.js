@@ -3,7 +3,11 @@ window.VestiaApp = window.VestiaApp || {};
 window.VestiaApp.config = {
 	dummyBaseUrl: "https://dummyjson.com",
 	productsPerPage: 9,
-	searchDebounceMs: 500
+	searchDebounceMs: 500,
+	storageKeys: {
+		cart: "vestia_cart",
+		prefs: "vestia_prefs"
+	}
 };
 
 window.VestiaApp.utils = {
@@ -27,6 +31,17 @@ window.VestiaApp.utils = {
 				func.apply(context, args);
 			}, wait);
 		};
+	},
+	notify: function (title, message, type) {
+		if (window.Swal && window.Swal.fire) {
+			return window.Swal.fire({
+				title: title,
+				text: message,
+				icon: type || "info",
+				confirmButtonColor: "#1f1b16"
+			});
+		}
+		window.alert(title + ": " + message);
 	}
 };
 
@@ -34,5 +49,9 @@ window.VestiaApp.constants = {
 	colors: ["Negro", "Blanco", "Azul", "Beige", "Rojo", "Verde", "Rosa", "Gris"],
 	sizes: ["XS", "S", "M", "L", "XL", "XXL"],
 	occasions: ["Casual", "Formal", "Fiesta", "Deporte"],
-	styles: ["Minimalista", "Boho", "Urbano", "Clásico", "Moderno"]
+	styles: ["Minimalista", "Boho", "Urbano", "Clásico", "Moderno"],
+	priceMaxDefault: 500
 };
+
+
+

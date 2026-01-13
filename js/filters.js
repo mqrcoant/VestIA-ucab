@@ -76,9 +76,15 @@
 
 	function setCategories(categories) {
 		var options = categories.map(function (category) {
+			var value = category;
+			var label = category;
+			if (typeof category === "object" && category !== null) {
+				value = category.slug || category.name || "";
+				label = category.name || category.slug || "";
+			}
 			return {
-				value: category,
-				label: formatCategoryLabel(category)
+				value: value,
+				label: formatCategoryLabel(label)
 			};
 		});
 		setOptions(dom.category, options, "Todas");
@@ -107,6 +113,22 @@
 		}
 	}
 
+	function syncCatalog(options) {
+		var opts = options || {};
+		if (APP.products && APP.products.syncWithFilters) {
+			return APP.products.syncWithFilters(state, opts);
+		}
+		if (APP.products && APP.products.refreshCatalog) {
+			return APP.products.refreshCatalog({
+				query: state.query,
+				category: state.category,
+				resetPage: opts.resetPage,
+				filters: state
+			});
+		}
+		return Promise.resolve();
+	}
+
 	function applyFilters(newState) {
 		state = Object.assign(state, newState);
 		if (dom.searchInput && typeof state.query === "string") {
@@ -131,10 +153,7 @@
 			dom.price.value = state.priceMax;
 		}
 		updatePriceLabel();
-		if (APP.products) {
-			return APP.products.refreshCatalog({ resetPage: true });
-		}
-		return Promise.resolve();
+		return syncCatalog({ resetPage: true });
 	}
 
 	function handleSearchSubmit(event) {
@@ -143,9 +162,7 @@
 			return;
 		}
 		state.query = dom.searchInput ? dom.searchInput.value.trim() : "";
-		if (APP.products) {
-			APP.products.refreshCatalog({ resetPage: true });
-		}
+		syncCatalog({ resetPage: true });
 	}
 
 	function handleFiltersSubmit(event) {
@@ -155,15 +172,11 @@
 		}
 		readFilters();
 		updatePriceLabel();
-		if (APP.products) {
-			APP.products.refreshCatalog({ resetPage: true });
-		}
+		syncCatalog({ resetPage: true });
 	}
 
 	function handleReset(event) {
-		var isClick = event.type === "click";
-		var isKey = event.type === "keydown" && event.key === "Enter";
-		if (!isClick && !isKey) {
+		if (event.type !== "click") {
 			return;
 		}
 		state.query = "";
@@ -183,7 +196,21 @@
 	function handlePriceInput() {
 		state.priceMax = dom.price ? APP.utils.toNumber(dom.price.value, APP.constants.priceMaxDefault) : APP.constants.priceMaxDefault;
 		updatePriceLabel();
+		applyFiltersDebounced();
 	}
+
+	function handleFilterFieldChange(event) {
+		if (event && dom.price && event.target === dom.price) {
+			return;
+		}
+		readFilters();
+		updatePriceLabel();
+		syncCatalog({ resetPage: true });
+	}
+
+	var applyFiltersDebounced = APP.utils.debounce(function () {
+		syncCatalog({ resetPage: true });
+	}, APP.config.searchDebounceMs || 300);
 
 	function initEvents() {
 		if (dom.searchForm) {
@@ -194,7 +221,11 @@
 		}
 		if (dom.reset) {
 			dom.reset.addEventListener("click", handleReset);
-			dom.reset.addEventListener("keydown", handleReset);
+		}
+		if (dom.filterFields && dom.filterFields.length) {
+			Array.prototype.forEach.call(dom.filterFields, function (field) {
+				field.addEventListener("change", handleFilterFieldChange);
+			});
 		}
 		if (dom.price) {
 			dom.price.addEventListener("input", handlePriceInput);
@@ -205,6 +236,7 @@
 	function init() {
 		cacheDom();
 		setStaticOptions();
+		readFilters();
 		updatePriceLabel();
 		initEvents();
 	}

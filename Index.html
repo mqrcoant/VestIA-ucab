@@ -110,10 +110,11 @@
 							<input id="price-range" type="range" class="form-range js-filter-field" min="0" max="500" step="10" value="500">
 							<span id="price-value" class="text-muted">Hasta 500</span>
 						</fieldset>
-						<fieldset class="col-12 col-md-4 d-grid">
-							<input type="submit" class="btn btn-primary" value="Aplicar filtros">
-							<span id="filters-reset" class="btn btn-outline-secondary mt-2" role="button" tabindex="0">Limpiar filtros</span>
-						</fieldset>
+						<section class="col-12 d-flex justify-content-end">
+							<button id="filters-reset" type="button" class="btn btn-outline-secondary btn-sm rounded-circle" aria-label="Limpiar filtros" title="Limpiar filtros">
+								<span class="fa-solid fa-broom"></span>
+							</button>
+						</section>
 					</form>
 
 					<ul id="product-grid" class="row list-unstyled mt-4"></ul>
