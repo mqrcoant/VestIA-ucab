@@ -3,6 +3,14 @@
 	--vestia-ink: #1f1b16;
 	--vestia-gold: #c39a62;
 	--vestia-line: #d9cdbf;
+	--vestia-white: #ffffff;
+	--vestia-shadow: rgba(31, 27, 22, 0.1);
+}
+
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
 }
 
 body {
@@ -10,6 +18,7 @@ body {
 	color: var(--vestia-ink);
 	font-family: "Source Sans 3", sans-serif;
 	font-size: 16px;
+	line-height: 1.6;
 	padding-top: 78px;
 }
 
@@ -19,10 +28,126 @@ h3,
 h4,
 .navbar-brand {
 	font-family: "Playfair Display", serif;
+	font-weight: 600;
+}
+
+.navbar {
+	background: var(--vestia-white) !important;
+	box-shadow: 0 2px 10px var(--vestia-shadow);
+}
+
+.navbar-brand {
+	font-size: 1.5rem;
+	color: var(--vestia-ink) !important;
+	letter-spacing: 1px;
 }
 
 #hero {
-	background: linear-gradient(120deg, #fff7ea, #f2e3d2);
+	background: linear-gradient(135deg, #fff7ea 0%, #f2e3d2 100%);
+	min-height: 400px;
+	display: flex;
+	align-items: center;
+}
+
+#hero h1 {
+	font-size: 2.5rem;
+	margin-bottom: 1rem;
+}
+
+.btn-primary {
+	background-color: var(--vestia-ink);
+	border-color: var(--vestia-ink);
+	transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+	background-color: var(--vestia-gold);
+	border-color: var(--vestia-gold);
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px var(--vestia-shadow);
+}
+
+.btn-outline-dark {
+	border-color: var(--vestia-ink);
+	color: var(--vestia-ink);
+	transition: all 0.3s ease;
+}
+
+.btn-outline-dark:hover {
+	background-color: var(--vestia-ink);
+	border-color: var(--vestia-ink);
+	transform: translateY(-2px);
+}
+
+.card {
+	border: 1px solid var(--vestia-line);
+	border-radius: 8px;
+	transition: all 0.3s ease;
+	overflow: hidden;
+	background: var(--vestia-white);
+}
+
+.card:hover {
+	transform: translateY(-5px);
+	box-shadow: 0 8px 20px var(--vestia-shadow);
+}
+
+.card-img-top {
+	height: 250px;
+	object-fit: cover;
+	transition: transform 0.3s ease;
+}
+
+.card:hover .card-img-top {
+	transform: scale(1.05);
+}
+
+.card-title {
+	color: var(--vestia-ink);
+	margin-bottom: 0.5rem;
+}
+
+.text-primary {
+	color: var(--vestia-gold) !important;
+}
+
+.badge {
+	font-weight: 400;
+	padding: 0.4em 0.8em;
+	border-radius: 4px;
+}
+
+.form-control,
+.form-select {
+	border: 1px solid var(--vestia-line);
+	border-radius: 6px;
+	padding: 0.6rem 1rem;
+	transition: border-color 0.3s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+	border-color: var(--vestia-gold);
+	box-shadow: 0 0 0 0.2rem rgba(195, 154, 98, 0.25);
+}
+
+.pagination .page-link {
+	color: var(--vestia-ink);
+	border: 1px solid var(--vestia-line);
+	margin: 0 4px;
+	border-radius: 6px;
+	transition: all 0.3s ease;
+}
+
+.pagination .page-item.active .page-link {
+	background-color: var(--vestia-ink);
+	border-color: var(--vestia-ink);
+}
+
+.pagination .page-link:hover {
+	background-color: var(--vestia-gold);
+	border-color: var(--vestia-gold);
+	color: var(--vestia-white);
 }
 
 #nav-links {
@@ -45,12 +170,67 @@ h4,
 	}
 }
 
+.nav-link {
+	cursor: pointer;
+	transition: color 0.3s ease;
+}
+
+.nav-link:hover {
+	color: var(--vestia-gold) !important;
+}
+
+#chat-panel {
+	border: 1px solid var(--vestia-line);
+	width: 360px;
+	max-height: 500px;
+	border-radius: 12px;
+	overflow: hidden;
+	box-shadow: 0 10px 30px var(--vestia-shadow);
+}
+
+#chat-panel .card-header {
+	border-bottom: 1px solid var(--vestia-line);
+	background: var(--vestia-ink);
+}
+
+#chat-panel .card-body {
+	max-height: 350px;
+	overflow-y: auto;
+	background: var(--vestia-cream);
+}
+
+#chat-panel .card-footer {
+	border-top: 1px solid var(--vestia-line);
+	background: var(--vestia-white);
+}
+
+#chat-toggle {
+	width: 60px;
+	height: 60px;
+	border-radius: 50%;
+	border: none;
+	box-shadow: 0 4px 15px var(--vestia-shadow);
+	transition: all 0.3s ease;
+}
+
+#chat-toggle:hover {
+	transform: scale(1.1);
+	box-shadow: 0 6px 20px var(--vestia-shadow);
+}
+
+#chat-widget {
+	right: 0;
+	z-index: 1050;
+}
+
 .chat-bubble {
-	background: #ffffff;
+	background: var(--vestia-white);
 	border: 1px solid var(--vestia-line);
 	border-left: 4px solid var(--vestia-gold);
 	padding: 12px;
 	margin-bottom: 10px;
+	border-radius: 8px;
+	animation: fadeIn 0.3s ease;
 }
 
 .chat-bubble.user {
@@ -58,77 +238,99 @@ h4,
 	border-left: 4px solid #a67c52;
 }
 
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
 .chat-meta {
 	color: #6c757d;
-	font-size: 14px;
-}
-
-.product-sizes span {
-	display: inline-block;
-	margin-right: 6px;
-}
-
-#image-preview {
-	display: none;
-	border: 1px solid var(--vestia-line);
-	padding: 6px;
-	background: #ffffff;
-}
-
-#chat-panel {
-	border: 1px solid var(--vestia-line);
-	width: 320px;
-}
-
-#chat-panel .card-header {
-	border-bottom: 1px solid var(--vestia-line);
-}
-
-#chat-panel .card-footer {
-	border-top: 1px solid var(--vestia-line);
-}
-
-#chat-toggle {
-	border: 1px solid var(--vestia-line);
-}
-
-#chat-widget {
-	right: 0;
+	font-size: 0.85rem;
 }
 
 #prefs-sidebar {
 	width: 320px;
 	overflow-y: auto;
 	z-index: 1045;
+	background: var(--vestia-white);
+	box-shadow: 2px 0 10px var(--vestia-shadow);
 }
 
 #prefs-sidebar.is-open {
 	display: block;
 }
 
-#prefs-toggle {
-	z-index: 1040;
-}
-
 #prefs-overlay {
 	z-index: 1040;
+	cursor: pointer;
+}
+
+#prefs-overlay.is-open {
+	display: block;
 }
 
 @media (max-width: 992px) {
 	#chat-panel {
-		width: 300px;
+		width: 320px;
 	}
 
 	#prefs-sidebar {
 		width: 100%;
 	}
+
+	#hero h1 {
+		font-size: 2rem;
+	}
 }
 
-.status-badge {
-	display: inline-block;
-	margin-right: 6px;
-	padding: 4px 8px;
+#image-preview {
+	display: none;
 	border: 1px solid var(--vestia-line);
-	background: #ffffff;
-	font-size: 12px;
+	padding: 10px;
+	background: var(--vestia-white);
+	border-radius: 8px;
+	max-width: 100%;
+	height: auto;
+}
+
+#image-preview.show {
+	display: block;
+	animation: fadeIn 0.3s ease;
+}
+
+footer {
+	background: var(--vestia-white);
+	margin-top: 4rem;
+}
+
+.shadow-sm {
+	box-shadow: 0 2px 8px var(--vestia-shadow) !important;
+}
+
+.loading-spinner {
+	display: inline-block;
+	width: 20px;
+	height: 20px;
+	border: 3px solid var(--vestia-line);
+	border-radius: 50%;
+	border-top-color: var(--vestia-gold);
+	animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.placeholder {
+	background-color: var(--vestia-line);
+	border-radius: 4px;
 }
