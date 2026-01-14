@@ -81,21 +81,67 @@
 		});
 	}
 
+	function getAllowedCategories() {
+		var allowed = APP.config.clothingCategories || [];
+		return Array.isArray(allowed) ? allowed : [];
+	}
+
+	function isAllowedCategory(category, allowed) {
+		if (!allowed || !allowed.length) {
+			return true;
+		}
+		return allowed.indexOf(category) !== -1;
+	}
+
+	function filterAllowedProducts(list, allowed) {
+		if (!allowed || !allowed.length) {
+			return list;
+		}
+		return list.filter(function (product) {
+			return isAllowedCategory(product.category, allowed);
+		});
+	}
+
 	function fetchBaseProducts(query, category) {
 		var baseUrl = APP.config.dummyBaseUrl;
-		var url = baseUrl + "/products?limit=100";
+		var allowed = getAllowedCategories();
+		var hasAllowed = allowed.length > 0;
+		var fetchPromise;
 
-		if (query) {
-			url = baseUrl + "/products/search?q=" + encodeURIComponent(query);
-		} else if (category) {
-			url = baseUrl + "/products/category/" + encodeURIComponent(category);
+		if (category && hasAllowed && allowed.indexOf(category) === -1) {
+			return Promise.resolve([]);
 		}
 
-		return fetchJson(url)
-			.then(function (data) {
-				var list = data.products || [];
+		if (!query && !category && hasAllowed) {
+			var requests = allowed.map(function (slug) {
+				return fetchJson(baseUrl + "/products/category/" + encodeURIComponent(slug));
+			});
+			fetchPromise = Promise.all(requests).then(function (results) {
+				var list = [];
+				results.forEach(function (data) {
+					list = list.concat(data.products || []);
+				});
+				return list;
+			});
+		} else {
+			var url = baseUrl + "/products?limit=100";
+
+			if (query) {
+				url = baseUrl + "/products/search?q=" + encodeURIComponent(query);
+			} else if (category) {
+				url = baseUrl + "/products/category/" + encodeURIComponent(category);
+			}
+
+			fetchPromise = fetchJson(url).then(function (data) {
+				return data.products || [];
+			});
+		}
+
+		return fetchPromise
+			.then(function (list) {
+				var filtered = filterAllowedProducts(list, allowed);
 				state.apiAvailable = true;
-				return list.map(function (p) {
+				return filtered.map(function (p) {
 					p.meta = deriveAttributes(p);
 					return p;
 				});
@@ -107,10 +153,19 @@
 			});
 	}
 
+
 	function fetchCategories() {
 		return fetchJson(APP.config.dummyBaseUrl + "/products/categories")
 			.then(function (categories) {
-				state.categories = categories || [];
+				var allowed = getAllowedCategories();
+				var list = categories || [];
+				if (allowed.length) {
+					list = list.filter(function (cat) {
+						var slug = cat.slug || cat;
+						return allowed.indexOf(slug) !== -1;
+					});
+				}
+				state.categories = list;
 				if (APP.filters && APP.filters.setCategories) {
 					APP.filters.setCategories(state.categories);
 				} else {
@@ -121,6 +176,7 @@
 				console.error("Error fetching categories:", error);
 			});
 	}
+
 
 	function populateCategorySelect() {
 		if (!dom.categorySelect) return;
@@ -137,6 +193,8 @@
 	function normalizeFilters(filters) {
 		var source = filters || {};
 		return {
+			query: typeof source.query === "string" ? source.query : "",
+			category: source.category || "",
 			color: source.color || "",
 			size: source.size || "",
 			occasion: source.occasion || "",
@@ -160,7 +218,13 @@
 	}
 
 	function applyLocalFilters(products, filters) {
+		var query = filters.query ? String(filters.query).toLowerCase().trim() : "";
 		return products.filter(function (product) {
+			if (query) {
+				var haystack = ((product.title || "") + " " + (product.description || "")).toLowerCase();
+				if (haystack.indexOf(query) == -1) return false;
+			}
+			if (filters.category && product.category !== filters.category) return false;
 			if (filters.color && product.meta.colors.indexOf(filters.color) === -1) return false;
 			if (filters.size && product.meta.sizes.indexOf(filters.size) === -1) return false;
 			if (filters.occasion && product.meta.occasion !== filters.occasion) return false;
@@ -205,6 +269,29 @@
 		return item;
 	}
 
+	function createRecommendationCard(product) {
+		var item = document.createElement("li");
+		item.className = "col-12 mb-3";
+
+		var description = product.description || "";
+		var shortDesc = description.length > 80 ? description.substring(0, 80) + "..." : description;
+
+		item.innerHTML = `
+			<div class="card h-100 shadow-sm">
+				<img src="${product.thumbnail}" class="card-img-top" alt="${product.title}" loading="lazy">
+				<div class="card-body d-flex flex-column">
+					<h3 class="h6 card-title">${product.title}</h3>
+					<p class="text-muted small mb-2">${shortDesc}</p>
+					<p class="fw-bold text-primary mb-3">${APP.utils.formatPrice(product.price)}</p>
+					<button class="btn btn-outline-dark btn-sm mt-auto js-add-to-cart" data-id="${product.id}">
+						<i class="fa-solid fa-cart-plus me-1"></i>
+						Agregar al carrito
+					</button>
+				</div>
+			</div>`;
+		return item;
+	}
+
 	function renderProducts(list) {
 		if (!dom.grid) return;
 		dom.grid.innerHTML = "";
@@ -220,6 +307,25 @@
 
 		list.forEach(function (p) {
 			dom.grid.appendChild(createProductCard(p));
+		});
+	}
+
+	function renderRecommendations(container, items) {
+		if (!container) {
+			return;
+		}
+		container.innerHTML = "";
+
+		if (!items || !items.length) {
+			var empty = document.createElement("li");
+			empty.className = "text-muted";
+			empty.textContent = "No hay recomendaciones disponibles.";
+			container.appendChild(empty);
+			return;
+		}
+
+		items.forEach(function (p) {
+			container.appendChild(createRecommendationCard(p));
 		});
 	}
 
@@ -249,6 +355,10 @@
 		renderProducts(paginatedProducts);
 		renderPagination(state.filteredProducts.length);
 		setStatus(state.filteredProducts.length + " productos encontrados");
+	}
+
+	function getFilteredProducts() {
+		return state.filteredProducts.slice();
 	}
 
 	function refreshCatalog(options) {
@@ -409,6 +519,8 @@
 		refreshCatalog: refreshCatalog,
 		syncWithFilters: syncWithFilters,
 		updateCatalog: updateCatalog,
+		getFilteredProducts: getFilteredProducts,
+		renderRecommendations: renderRecommendations,
 		getProductById: getProductById,
 		state: state
 	};

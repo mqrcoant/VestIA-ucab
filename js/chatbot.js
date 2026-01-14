@@ -12,6 +12,9 @@
 		chatDom.input = APP.utils.byId("chat-input");
 		chatDom.messages = APP.utils.byId("chat-messages");
 		chatDom.status = APP.utils.byId("chat-status");
+		chatDom.panel = APP.utils.byId("chat-panel");
+		chatDom.toggle = APP.utils.byId("chat-toggle");
+		chatDom.close = APP.utils.byId("chat-close");
 	}
 
 	function loadHistory() {
@@ -101,6 +104,60 @@
 		}
 	}
 
+	function isActivationEvent(event) {
+		var isClick = event.type === "click";
+		var isKey = event.type === "keydown" && (event.key === "Enter" || event.key === " " || event.key === "Spacebar");
+		return isClick || isKey;
+	}
+
+	function setChatOpen(isOpen) {
+		if (!chatDom.panel) {
+			return;
+		}
+		chatDom.panel.classList.toggle("d-none", !isOpen);
+		chatDom.panel.classList.toggle("is-open", isOpen);
+		chatDom.panel.setAttribute("aria-hidden", isOpen ? "false" : "true");
+		if (chatDom.toggle) {
+			chatDom.toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+		}
+		if (isOpen && chatDom.input) {
+			chatDom.input.focus();
+		}
+	}
+
+	function handleChatToggle(event) {
+		if (!isActivationEvent(event)) {
+			return;
+		}
+		var isOpen = chatDom.panel && !chatDom.panel.classList.contains("d-none");
+		setChatOpen(!isOpen);
+	}
+
+	function handleChatClose(event) {
+		if (!isActivationEvent(event)) {
+			return;
+		}
+		setChatOpen(false);
+	}
+
+	function handleChatEscape(event) {
+		if (event.key === "Escape") {
+			setChatOpen(false);
+		}
+	}
+
+	function initChatWidget() {
+		if (chatDom.toggle) {
+			chatDom.toggle.addEventListener("click", handleChatToggle);
+			chatDom.toggle.addEventListener("keydown", handleChatToggle);
+		}
+		if (chatDom.close) {
+			chatDom.close.addEventListener("click", handleChatClose);
+			chatDom.close.addEventListener("keydown", handleChatClose);
+		}
+		document.addEventListener("keydown", handleChatEscape);
+	}
+
 	function buildPrompt() {
 		var base = "You are Lia, a fashion assistant for VestIA. Ask short questions about color, size, price, style, and occasion. Reply in JSON only without markdown: {\"reply\":\"...\",\"filters\":{}}. Use lowercase Spanish values without accents for filters: color=negro, blanco, rojo, azul, verde, beige, marron; size=xs,s,m,l,xl; occasion=formal, casual, deportivo, fiesta, trabajo; style=clasico, minimal, urbano, bohemio, deportivo. category and query optional. Keep reply under 40 words. Use ASCII only.";
 		var contents = [{ role: "user", parts: [{ text: base }] }];
@@ -132,7 +189,30 @@
 		if (!value) {
 			return "";
 		}
-		return String(value).toLowerCase().trim();
+		var raw = String(value).toLowerCase().trim();
+		var map = {
+			blusa: "tops",
+			top: "tops",
+			tops: "tops",
+			camisa: "mens-shirts",
+			camiseta: "mens-shirts",
+			shirt: "mens-shirts",
+			vestido: "womens-dresses",
+			dress: "womens-dresses",
+			zapato: "womens-shoes",
+			zapatos: "womens-shoes",
+			calzado: "womens-shoes",
+			shoe: "womens-shoes",
+			shoes: "womens-shoes"
+		};
+		if (map[raw]) {
+			return map[raw];
+		}
+		var allowed = APP.config.clothingCategories || [];
+		if (Array.isArray(allowed) && allowed.indexOf(raw) !== -1) {
+			return raw;
+		}
+		return "";
 	}
 
 	function parseFilters(rawFilters) {
@@ -372,6 +452,22 @@
 		}
 	}
 
+	function handleImageAddToCart(event) {
+		var trigger = event.target.closest(".js-add-to-cart");
+		if (!trigger) {
+			return;
+		}
+		var id = trigger.getAttribute("data-id");
+		if (!APP.products || !APP.cart || !APP.products.getProductById || !APP.cart.addItem) {
+			return;
+		}
+		var product = APP.products.getProductById(id);
+		if (!product) {
+			return;
+		}
+		APP.cart.addItem(product);
+	}
+
 	function initChat() {
 		cacheChatDom();
 		resetConversation();
@@ -385,6 +481,7 @@
 		if (chatDom.messages) {
 			chatDom.messages.addEventListener("click", handleRecommendationClick);
 		}
+		initChatWidget();
 	}
 
 	var imageDom = {};
@@ -606,7 +703,7 @@
 				if (APP.filters) {
 					APP.filters.applyFilters(filters).then(function () {
 						if (APP.products) {
-							var items = APP.products.getFilteredProducts().slice(0, 4);
+							var items = APP.products.getFilteredProducts().slice(0, 2);
 							APP.products.renderRecommendations(imageDom.recommendations, items);
 						}
 					});
@@ -622,6 +719,9 @@
 		cacheImageDom();
 		if (imageDom.form) {
 			imageDom.form.addEventListener("submit", handleImageSubmit);
+		}
+		if (imageDom.recommendations) {
+			imageDom.recommendations.addEventListener("click", handleImageAddToCart);
 		}
 	}
 

@@ -4,7 +4,9 @@
 	APP.config = {
 		dummyBaseUrl: "https://dummyjson.com",
 		productsPerPage: 9,
-		geminiApiKey: "AIzaSyAdBNPOL3voZ4hQ9Lsbg5gr4dDNoi1eWcE", // No exponer en producción
+		searchDebounceMs: 250,
+		clothingCategories: ["mens-shirts", "mens-shoes", "tops", "womens-dresses", "womens-shoes"],
+		geminiApiKey: "AIzaSyCQ2tZrTIHE3abtOAaslRxVXfHHoCV5rq4", // No exponer en producción
 		geminiModel: "gemini-2.5-flash",
 		geminiBaseUrl: "https://generativelanguage.googleapis.com/v1beta/models",
 		storageKeys: {
@@ -47,6 +49,18 @@
 		return "$" + value.toFixed(2);
 	}
 
+	function debounce(fn, delay) {
+		var timer;
+		return function () {
+			var context = this;
+			var args = arguments;
+			clearTimeout(timer);
+			timer = setTimeout(function () {
+				fn.apply(context, args);
+			}, delay);
+		};
+	}
+
 	function notify(title, text, icon) {
 		if (window.Swal) {
 			window.Swal.fire({
@@ -66,6 +80,7 @@
 		qsa: qsa,
 		toNumber: toNumber,
 		formatPrice: formatPrice,
+		debounce: debounce,
 		notify: notify
 	};
 })();
