@@ -6,7 +6,7 @@
 		productsPerPage: 9,
 		searchDebounceMs: 250,
 		clothingCategories: ["mens-shirts", "mens-shoes", "tops", "womens-dresses", "womens-shoes"],
-		geminiApiKey: "AIzaSyAV7-1Loqdz610OH6m1x406y7bDwLL-RUA", // No exponer en producción
+		geminiApiKey: "AIzaSyArWnwzaA6mquXPpIONeX5UKQ2Bc7jtZBM", // No exponer en producción
 		geminiModel: "gemini-2.5-flash",
 		geminiBaseUrl: "https://generativelanguage.googleapis.com/v1beta/models",
 		storageKeys: {
