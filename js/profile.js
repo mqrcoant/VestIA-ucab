@@ -16,6 +16,12 @@
 		dom.apply = APP.utils.byId("apply-preferences");
 	}
 
+	function setStatus(message) {
+		if (dom.status) {
+			dom.status.textContent = message || "";
+		}
+	}
+
 	function setOptions(select, options, placeholder) {
 		if (!select) {
 			return;
@@ -108,7 +114,7 @@
 			return;
 		}
 		if (!prefs) {
-			dom.summary.textContent = "Aun no hay preferencias guardadas.";
+			dom.summary.textContent = "Todavia no hay preferencias guardadas.";
 			return;
 		}
 		var colorList = Array.isArray(prefs.colors) ? prefs.colors : [];
@@ -135,29 +141,29 @@
 		savePreferences(prefs);
 		updateSummary(prefs);
 		dom.form.classList.remove("was-validated");
-		if (dom.status) {
-			dom.status.textContent = "Preferencias guardadas.";
-		}
+		setStatus("Preferencias guardadas.");
 		APP.utils.notify("Preferencias", "Se guardaron tus preferencias.", "success");
 	}
 
-	function handleApply(event) {
+	function isActivationEvent(event) {
 		var isClick = event.type === "click";
 		var isKey = event.type === "keydown" && event.key === "Enter";
-		if (!isClick && !isKey) {
+		return isClick || isKey;
+	}
+
+	function handleApply(event) {
+		if (!isActivationEvent(event)) {
 			return;
 		}
 		var prefs = loadPreferences();
 		if (!prefs) {
 			APP.utils.notify("Preferencias", "Guarda tus preferencias primero.", "info");
-			if (dom.status) {
-				dom.status.textContent = "Primero guarda tus preferencias.";
-			}
+			setStatus("Primero guarda tus preferencias.");
 			return;
 		}
 		var colors = Array.isArray(prefs.colors) ? prefs.colors : [];
 		var primaryColor = colors.length ? colors[0] : "";
-		if (APP.filters) {
+		if (APP.filters && APP.filters.applyFilters) {
 			APP.filters.applyFilters({
 				color: primaryColor,
 				size: prefs.size,
@@ -168,9 +174,7 @@
 		if (section) {
 			section.scrollIntoView({ behavior: "smooth" });
 		}
-		if (dom.status) {
-			dom.status.textContent = "Preferencias aplicadas al catalogo.";
-		}
+		setStatus("Preferencias aplicadas al catalogo.");
 	}
 
 	function init() {

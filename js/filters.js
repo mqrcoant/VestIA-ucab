@@ -107,6 +107,17 @@
 		state.priceMin = 0;
 	}
 
+	function resetState() {
+		state.query = "";
+		state.category = "";
+		state.color = "";
+		state.size = "";
+		state.occasion = "";
+		state.style = "";
+		state.priceMin = 0;
+		state.priceMax = APP.constants.priceMaxDefault;
+	}
+
 	function updatePriceLabel() {
 		if (dom.priceValue) {
 			dom.priceValue.textContent = "Hasta " + state.priceMax;
@@ -179,14 +190,7 @@
 		if (event.type !== "click") {
 			return;
 		}
-		state.query = "";
-		state.category = "";
-		state.color = "";
-		state.size = "";
-		state.occasion = "";
-		state.style = "";
-		state.priceMin = 0;
-		state.priceMax = APP.constants.priceMaxDefault;
+		resetState();
 		if (dom.searchInput) {
 			dom.searchInput.value = "";
 		}

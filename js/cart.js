@@ -87,27 +87,21 @@
 		render() {
 			ensureCheckoutButton();
 			if (!this.catalogAvailable) {
-				renderEmpty("Catalog API no disponible. Carrito vacio.");
-				if (dom.status) {
-					dom.status.textContent = "Restablece la conexion para ver tu carrito.";
-				}
+				renderEmpty("Catalogo no disponible. El carrito esta vacio.");
+				setStatus("Revisa la conexion para ver tu carrito.");
 				return;
 			}
 
 			if (!this.items.length) {
 				renderEmpty("Tu carrito esta vacio.");
-				if (dom.status) {
-					dom.status.textContent = "Agrega productos desde el catalogo.";
-				}
+				setStatus("Agrega productos desde el catalogo.");
 				return;
 			}
 
 			if (dom.empty) {
 				dom.empty.textContent = "";
 			}
-			if (dom.status) {
-				dom.status.textContent = "";
-			}
+			setStatus("");
 			renderItems(this.items);
 			renderTotal(this.getTotal());
 			updateCheckoutState();
@@ -126,6 +120,12 @@
 		dom.summary = dom.total ? dom.total.parentElement : null;
 	}
 
+	function setStatus(message) {
+		if (dom.status) {
+			dom.status.textContent = message || "";
+		}
+	}
+
 	function renderEmpty(message) {
 		if (dom.items) {
 			dom.items.innerHTML = "";
@@ -134,7 +134,7 @@
 			dom.empty.textContent = message;
 		}
 		if (dom.total) {
-			dom.total.textContent = "Total: $0";
+			dom.total.textContent = "Total: " + APP.utils.formatPrice(0);
 		}
 		updateCheckoutState();
 	}
@@ -310,7 +310,7 @@
 	}
 
 	function requestCheckoutConfirmation(total) {
-		var message = "Vas a comprar por " + APP.utils.formatPrice(total) + ". Quieres continuar?";
+		var message = "Vas a comprar por " + APP.utils.formatPrice(total) + ". Deseas continuar?";
 		if (window.Swal && window.Swal.fire) {
 			return window.Swal.fire({
 				title: "Confirmar compra",
@@ -330,31 +330,23 @@
 	function handleCheckout(event) {
 		event.preventDefault();
 		if (!cart.items.length) {
-			if (dom.status) {
-				dom.status.textContent = "Tu carrito esta vacio.";
-			}
+			setStatus("Tu carrito esta vacio.");
 			APP.utils.notify("Carrito", "Agrega productos antes de comprar.", "info");
 			return;
 		}
 		if (!cart.catalogAvailable) {
-			if (dom.status) {
-				dom.status.textContent = "Catalogo no disponible para comprar.";
-			}
+			setStatus("Catalogo no disponible para comprar.");
 			APP.utils.notify("Carrito", "Revisa la conexion del catalogo.", "warning");
 			return;
 		}
 		var total = cart.getTotal();
 		requestCheckoutConfirmation(total).then(function (confirmed) {
 			if (!confirmed) {
-				if (dom.status) {
-					dom.status.textContent = "Compra cancelada.";
-				}
+				setStatus("Compra cancelada.");
 				return;
 			}
 			cart.clear();
-			if (dom.status) {
-				dom.status.textContent = "Compra realizada. Gracias por tu pedido.";
-			}
+			setStatus("Compra realizada. Gracias por tu pedido.");
 			APP.utils.notify("Compra confirmada", "Recibimos tu pedido.", "success");
 		});
 	}

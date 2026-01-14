@@ -24,10 +24,14 @@
         }
     }
 
-    function handlePrefsToggle(event) {
+    function isActivationEvent(event) {
         var isClick = event.type === "click";
         var isKey = event.type === "keydown" && (event.key === "Enter" || event.key === " " || event.key === "Spacebar");
-        if (!isClick && !isKey) {
+        return isClick || isKey;
+    }
+
+    function handlePrefsToggle(event) {
+        if (!isActivationEvent(event)) {
             return;
         }
         var isOpen = dom.prefsSidebar && dom.prefsSidebar.classList.contains("is-open");
@@ -35,12 +39,16 @@
     }
 
     function handlePrefsClose(event) {
-        var isClick = event.type === "click";
-        var isKey = event.type === "keydown" && (event.key === "Enter" || event.key === " " || event.key === "Spacebar");
-        if (!isClick && !isKey) {
+        if (!isActivationEvent(event)) {
             return;
         }
         setPrefsOpen(false);
+    }
+
+    function handleEscape(event) {
+        if (event.key === "Escape") {
+            setPrefsOpen(false);
+        }
     }
 
     function initPrefsSidebar() {
@@ -56,11 +64,7 @@
         if (dom.prefsOverlay) {
             dom.prefsOverlay.addEventListener("click", handlePrefsClose);
         }
-        document.addEventListener("keydown", function (event) {
-            if (event.key === "Escape") {
-                setPrefsOpen(false);
-            }
-        });
+        document.addEventListener("keydown", handleEscape);
     }
 
     function init() {

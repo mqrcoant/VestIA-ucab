@@ -10,6 +10,7 @@
 		apiAvailable: true,
 		lastQuery: "",
 		lastCategory: "",
+		lastFilters: {},
 		isLoading: false
 	};
 
@@ -129,12 +130,13 @@
 	}
 
 	function applyLocalFilters(products, filters) {
+		var activeFilters = filters || {};
 		return products.filter(function (product) {
-			if (filters.color && product.meta.colors.indexOf(filters.color) === -1) return false;
-			if (filters.size && product.meta.sizes.indexOf(filters.size) === -1) return false;
-			if (filters.occasion && product.meta.occasion !== filters.occasion) return false;
-			if (filters.style && product.meta.style !== filters.style) return false;
-			if (filters.priceMax && product.price > filters.priceMax) return false;
+			if (activeFilters.color && product.meta.colors.indexOf(activeFilters.color) === -1) return false;
+			if (activeFilters.size && product.meta.sizes.indexOf(activeFilters.size) === -1) return false;
+			if (activeFilters.occasion && product.meta.occasion !== activeFilters.occasion) return false;
+			if (activeFilters.style && product.meta.style !== activeFilters.style) return false;
+			if (activeFilters.priceMax && product.price > activeFilters.priceMax) return false;
 			return true;
 		});
 	}
@@ -208,7 +210,9 @@
 	}
 
 	function updateCatalog(filters, resetPage) {
-		state.filteredProducts = applyLocalFilters(state.baseProducts, filters || {});
+		var activeFilters = filters || state.lastFilters || {};
+		state.lastFilters = activeFilters;
+		state.filteredProducts = applyLocalFilters(state.baseProducts, activeFilters);
 		if (resetPage) state.currentPage = 1;
 
 		var paginatedProducts = paginate(state.filteredProducts);
@@ -219,6 +223,7 @@
 
 	function refreshCatalog(options) {
 		var opts = options || {};
+		state.apiAvailable = true;
 		setLoading(true);
 		setStatus("Cargando productos...");
 
@@ -227,14 +232,38 @@
 				state.baseProducts = products;
 				state.lastQuery = opts.query || "";
 				state.lastCategory = opts.category || "";
+				if (APP.cart && APP.cart.setCatalogAvailable) {
+					APP.cart.setCatalogAvailable(state.apiAvailable);
+				}
 				setLoading(false);
-				updateCatalog({}, opts.resetPage);
+				updateCatalog(opts.filters, opts.resetPage);
 			})
 			.catch(function (error) {
 				setLoading(false);
 				setStatus("Error al cargar productos. Intenta de nuevo.");
 				console.error("Error refreshing catalog:", error);
 			});
+	}
+
+	function syncWithFilters(filters, options) {
+		var opts = options || {};
+		var activeFilters = filters || {};
+		var query = activeFilters.query || "";
+		var category = activeFilters.category || "";
+		var shouldFetch = !state.baseProducts.length || query !== state.lastQuery || category !== state.lastCategory;
+
+		state.lastFilters = activeFilters;
+
+		if (shouldFetch) {
+			return refreshCatalog({
+				query: query,
+				category: category,
+				resetPage: opts.resetPage,
+				filters: activeFilters
+			});
+		}
+		updateCatalog(activeFilters, opts.resetPage);
+		return Promise.resolve();
 	}
 
 	function handleSearch(e) {
@@ -331,6 +360,7 @@
 	APP.products = {
 		init: init,
 		refreshCatalog: refreshCatalog,
+		syncWithFilters: syncWithFilters,
 		updateCatalog: updateCatalog,
 		getProductById: getProductById,
 		state: state
