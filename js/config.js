@@ -1,57 +1,71 @@
-window.VestiaApp = window.VestiaApp || {};
+(function () {
+	var APP = window.VestiaApp = window.VestiaApp || {};
 
-window.VestiaApp.config = {
-	dummyBaseUrl: "https://dummyjson.com",
-	productsPerPage: 9,
-	searchDebounceMs: 500,
-	storageKeys: {
-		cart: "vestia_cart",
-		prefs: "vestia_prefs"
-	}
-};
+	APP.config = {
+		dummyBaseUrl: "https://dummyjson.com",
+		productsPerPage: 9,
+		geminiApiKey: "AIzaSyAdBNPOL3voZ4hQ9Lsbg5gr4dDNoi1eWcE", // No exponer en producción
+		geminiModel: "gemini-2.5-flash",
+		geminiBaseUrl: "https://generativelanguage.googleapis.com/v1beta/models",
+		storageKeys: {
+			cart: "vestia_cart",
+			prefs: "vestia_prefs",
+			chat: "vestia_chat"
+		}
+	};
 
-window.VestiaApp.utils = {
-	byId: function (id) {
+	APP.constants = {
+		colors: ["Negro", "Blanco", "Rojo", "Azul", "Verde", "Beige", "Marron"],
+		sizes: ["XS", "S", "M", "L", "XL"],
+		occasions: ["Formal", "Casual", "Deportivo", "Fiesta", "Trabajo"],
+		styles: ["Clasico", "Minimal", "Urbano", "Bohemio", "Deportivo"],
+		priceMaxDefault: 500
+	};
+
+	APP.assistant = {
+		name: "Lia"
+	};
+
+	function byId(id) {
 		return document.getElementById(id);
-	},
-	formatPrice: function (p) {
-		return "$" + (typeof p === "number" ? p.toFixed(2) : p);
-	},
-	toNumber: function (v, def) {
-		var n = parseInt(v, 10);
-		return isNaN(n) ? def : n;
-	},
-	debounce: function (func, wait) {
-		var timeout;
-		return function () {
-			var context = this;
-			var args = arguments;
-			clearTimeout(timeout);
-			timeout = setTimeout(function () {
-				func.apply(context, args);
-			}, wait);
-		};
-	},
-	notify: function (title, message, type) {
-		if (window.Swal && window.Swal.fire) {
-			return window.Swal.fire({
+	}
+
+	function qs(selector, root) {
+		return (root || document).querySelector(selector);
+	}
+
+	function qsa(selector, root) {
+		return (root || document).querySelectorAll(selector);
+	}
+
+	function toNumber(value, fallback) {
+		var parsed = Number(value);
+		return Number.isNaN(parsed) ? fallback : parsed;
+	}
+
+	function formatPrice(value) {
+		return "$" + value.toFixed(2);
+	}
+
+	function notify(title, text, icon) {
+		if (window.Swal) {
+			window.Swal.fire({
 				title: title,
-				text: message,
-				icon: type || "info",
+				text: text,
+				icon: icon || "info",
 				confirmButtonColor: "#1f1b16"
 			});
+			return;
 		}
-		window.alert(title + ": " + message);
+		alert(title + " - " + text);
 	}
-};
 
-window.VestiaApp.constants = {
-	colors: ["Negro", "Blanco", "Azul", "Beige", "Rojo", "Verde", "Rosa", "Gris"],
-	sizes: ["XS", "S", "M", "L", "XL", "XXL"],
-	occasions: ["Casual", "Formal", "Fiesta", "Deporte"],
-	styles: ["Minimalista", "Boho", "Urbano", "Clásico", "Moderno"],
-	priceMaxDefault: 500
-};
-
-
-
+	APP.utils = {
+		byId: byId,
+		qs: qs,
+		qsa: qsa,
+		toNumber: toNumber,
+		formatPrice: formatPrice,
+		notify: notify
+	};
+})();
