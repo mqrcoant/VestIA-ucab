@@ -521,7 +521,7 @@
 			return Promise.reject(new Error("Missing API key"));
 		}
 		var url = APP.config.geminiBaseUrl + "/" + APP.config.geminiModel + ":generateContent?key=" + apiKey;
-		var prompt = "Analiza la imagen y responde solo JSON sin markdown. Si NO hay prenda, accesorio u outfit relacionado con moda, responde: {\"reconocida\":false,\"colores\":[],\"estilo\":\"\",\"categoria\":\"\",\"ocasion\":\"\"}. Si SI hay, responde: {\"reconocida\":true,\"colores\":[...],\"estilo\":\"\",\"categoria\":\"\",\"ocasion\":\"\"}. Usa valores en minusculas y sin acentos. Colores: negro, blanco, rojo, azul, verde, beige, marron. Estilos: clasico, minimal, urbano, bohemio, deportivo. Ocasion: formal, casual, deportivo, fiesta, trabajo. Categoria: blusa, pantalon, vestido, accesorio, calzado, abrigo, falda, short. Usa ASCII.";
+		var prompt = "Analiza la imagen y responde solo JSON sin markdown. Si NO hay prenda, accesorio u outfit relacionado con moda, responde: {\"recognized\":false,\"colors\":[],\"style\":\"\",\"category\":\"\",\"occasion\":\"\"}. Si SI hay, responde: {\"recognized\":true,\"colors\":[...],\"style\":\"\",\"category\":\"\",\"occasion\":\"\"}. Usa valores en minusculas y sin acentos. Colores: negro, blanco, rojo, azul, verde, beige, marron. Estilos: clasico, minimal, urbano, bohemio, deportivo. Ocasion: formal, casual, deportivo, fiesta, trabajo. Categoria: blusa, pantalon, vestido, accesorio, calzado, abrigo, falda, short. Usa ASCII.";
 		var payload = {
 			contents: [{
 				role: "user",
@@ -618,8 +618,11 @@
 			moderno: "Minimal",
 			modern: "Minimal"
 		};
-		var colors = Array.isArray(parsed.colors) ? parsed.colors : [];
-		var normalizedColors = colors.map(function (color) {
+		var rawColors = parsed.colors || parsed.colores || [];
+		if (!Array.isArray(rawColors)) {
+			rawColors = [rawColors];
+		}
+		var normalizedColors = rawColors.map(function (color) {
 			return normalizeByMap(color, colorMap, APP.constants.colors);
 		}).filter(function (color) {
 			return Boolean(color);
@@ -627,9 +630,9 @@
 		return {
 			recognized: true,
 			colors: normalizedColors,
-			style: normalizeByMap(parsed.style, styleMap, APP.constants.styles),
-			category: normalizeCategory(parsed.category),
-			occasion: normalizeByMap(parsed.occasion, occasionMap, APP.constants.occasions)
+			style: normalizeByMap(parsed.style || parsed.estilo, styleMap, APP.constants.styles),
+			category: normalizeCategory(parsed.category || parsed.categoria),
+			occasion: normalizeByMap(parsed.occasion || parsed.ocasion, occasionMap, APP.constants.occasions)
 		};
 	}
 
