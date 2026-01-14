@@ -10,7 +10,7 @@
 		apiAvailable: true,
 		lastQuery: "",
 		lastCategory: "",
-		lastFilters: {},
+		activeFilters: null,
 		isLoading: false
 	};
 
@@ -94,6 +94,7 @@
 		return fetchJson(url)
 			.then(function (data) {
 				var list = data.products || [];
+				state.apiAvailable = true;
 				return list.map(function (p) {
 					p.meta = deriveAttributes(p);
 					return p;
@@ -110,7 +111,11 @@
 		return fetchJson(APP.config.dummyBaseUrl + "/products/categories")
 			.then(function (categories) {
 				state.categories = categories || [];
-				populateCategorySelect();
+				if (APP.filters && APP.filters.setCategories) {
+					APP.filters.setCategories(state.categories);
+				} else {
+					populateCategorySelect();
+				}
 			})
 			.catch(function (error) {
 				console.error("Error fetching categories:", error);
@@ -129,14 +134,39 @@
 		});
 	}
 
+	function normalizeFilters(filters) {
+		var source = filters || {};
+		return {
+			color: source.color || "",
+			size: source.size || "",
+			occasion: source.occasion || "",
+			style: source.style || "",
+			priceMin: typeof source.priceMin === "number" ? source.priceMin : 0,
+			priceMax: APP.utils.toNumber(source.priceMax, APP.constants.priceMaxDefault)
+		};
+	}
+
+	function getActiveFilters(filters) {
+		if (filters) {
+			return normalizeFilters(filters);
+		}
+		if (state.activeFilters) {
+			return state.activeFilters;
+		}
+		if (APP.filters && APP.filters.state) {
+			return normalizeFilters(APP.filters.state);
+		}
+		return normalizeFilters({});
+	}
+
 	function applyLocalFilters(products, filters) {
-		var activeFilters = filters || {};
 		return products.filter(function (product) {
-			if (activeFilters.color && product.meta.colors.indexOf(activeFilters.color) === -1) return false;
-			if (activeFilters.size && product.meta.sizes.indexOf(activeFilters.size) === -1) return false;
-			if (activeFilters.occasion && product.meta.occasion !== activeFilters.occasion) return false;
-			if (activeFilters.style && product.meta.style !== activeFilters.style) return false;
-			if (activeFilters.priceMax && product.price > activeFilters.priceMax) return false;
+			if (filters.color && product.meta.colors.indexOf(filters.color) === -1) return false;
+			if (filters.size && product.meta.sizes.indexOf(filters.size) === -1) return false;
+			if (filters.occasion && product.meta.occasion !== filters.occasion) return false;
+			if (filters.style && product.meta.style !== filters.style) return false;
+			if (typeof filters.priceMin === "number" && product.price < filters.priceMin) return false;
+			if (typeof filters.priceMax === "number" && product.price > filters.priceMax) return false;
 			return true;
 		});
 	}
@@ -210,8 +240,8 @@
 	}
 
 	function updateCatalog(filters, resetPage) {
-		var activeFilters = filters || state.lastFilters || {};
-		state.lastFilters = activeFilters;
+		var activeFilters = getActiveFilters(filters);
+		state.activeFilters = activeFilters;
 		state.filteredProducts = applyLocalFilters(state.baseProducts, activeFilters);
 		if (resetPage) state.currentPage = 1;
 
@@ -223,7 +253,7 @@
 
 	function refreshCatalog(options) {
 		var opts = options || {};
-		state.apiAvailable = true;
+		var filters = opts.filters || getActiveFilters();
 		setLoading(true);
 		setStatus("Cargando productos...");
 
@@ -236,7 +266,7 @@
 					APP.cart.setCatalogAvailable(state.apiAvailable);
 				}
 				setLoading(false);
-				updateCatalog(opts.filters, opts.resetPage);
+				updateCatalog(filters, opts.resetPage);
 			})
 			.catch(function (error) {
 				setLoading(false);
@@ -247,22 +277,18 @@
 
 	function syncWithFilters(filters, options) {
 		var opts = options || {};
-		var activeFilters = filters || {};
-		var query = activeFilters.query || "";
-		var category = activeFilters.category || "";
-		var shouldFetch = !state.baseProducts.length || query !== state.lastQuery || category !== state.lastCategory;
-
-		state.lastFilters = activeFilters;
-
+		var nextQuery = filters && typeof filters.query === "string" ? filters.query.trim() : "";
+		var nextCategory = filters && typeof filters.category === "string" ? filters.category : "";
+		var shouldFetch = !state.baseProducts.length || nextQuery !== state.lastQuery || nextCategory !== state.lastCategory;
 		if (shouldFetch) {
 			return refreshCatalog({
-				query: query,
-				category: category,
+				query: nextQuery,
+				category: nextCategory,
 				resetPage: opts.resetPage,
-				filters: activeFilters
+				filters: filters
 			});
 		}
-		updateCatalog(activeFilters, opts.resetPage);
+		updateCatalog(filters, opts.resetPage);
 		return Promise.resolve();
 	}
 
@@ -282,12 +308,18 @@
 	}
 
 	function initEvents() {
-		if (dom.searchForm) {
-			dom.searchForm.addEventListener("submit", handleSearch);
+		if (!APP.filters) {
+			if (dom.searchForm) {
+				dom.searchForm.addEventListener("submit", handleSearch);
+			}
+
+			if (dom.categorySelect) {
+				dom.categorySelect.addEventListener("change", handleCategoryChange);
+			}
 		}
 
-		if (dom.categorySelect) {
-			dom.categorySelect.addEventListener("change", handleCategoryChange);
+		if (dom.grid) {
+			dom.grid.addEventListener("click", handleAddToCart);
 		}
 
 		if (dom.pagination) {
@@ -347,9 +379,24 @@
 		});
 	}
 
+	function handleAddToCart(event) {
+		var trigger = event.target.closest(".js-add-to-cart");
+		if (!trigger) {
+			return;
+		}
+		var id = trigger.getAttribute("data-id");
+		var product = getProductById(id);
+		if (!product || !APP.cart || !APP.cart.addItem) {
+			return;
+		}
+		APP.cart.addItem(product);
+	}
+
 	function init() {
 		cacheDom();
-		populateFilterSelects();
+		if (!APP.filters) {
+			populateFilterSelects();
+		}
 		initEvents();
 
 		fetchCategories().then(function () {
@@ -366,5 +413,4 @@
 		state: state
 	};
 
-	document.addEventListener("DOMContentLoaded", init);
 })();
